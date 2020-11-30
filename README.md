@@ -1,2 +1,3 @@
-# SVGui
+# Seagull
+
 Supervisor GUI App
