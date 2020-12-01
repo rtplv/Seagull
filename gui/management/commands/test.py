@@ -6,25 +6,27 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # all = Program.objects.all()
 
-        # profiles_group = ProgramGroup()
-        # profiles_group.name = 'Profiles'
-        # profiles_group.save()
-        #
-        # print(profiles_group)
+        group = ProgramGroup(name='Indexing')
+        group.save()
+
+        print(group)
+
+        # program = Program()
+        # program.name = 'markering'
+        # program.pid = 52
+        # program.group = ocas_group
+        # program.save()
         #
         # program = Program()
-        # program.name = 'recount_statistic'
+        # program.name = 'listen_some_queue'
         # program.pid = 2
-        # program.group = profiles_group
+        # program.group = pirabit_group
         # program.save()
 
-        profiles_group = ProgramGroup.objects.get(pk=3)
-
-        profiles_group.program_set.create(name='activity_stat', pid=10)
-        profiles_group.program_set.create(name='pass_data', pid=11)
+        # sorted_programs = Program.objects.order_by('name')
 
         # last = Program.objects.filter(id=5).get()
         # p = Program(name='Test', pid=25)
         # p.save()
 
-        print(profiles_group)
+        # print(sorted_programs)

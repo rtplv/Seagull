@@ -1,0 +1,15 @@
+{% extends 'base_layout.html' %}
+{% block title %}Seagull - Supervisord Monitor{% endblock %}
+
+{% block content %}
+    <div class="groups-list">
+        Groups:
+        <ul>
+            {% for group in groups %}
+                <li>
+                    <a href="{% url 'gui:group_detail' group.id %}">{{ group.name }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

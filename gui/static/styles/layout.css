@@ -1,0 +1,28 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
+    padding: 0;
+    margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 300;
+    padding: 0;
+    margin: 0;
+}
+
+/*Header*/
+.page-header {
+    padding: 10px 15px;
+}
+
+.logo-block {
+    display: flex;
+    align-items: center;
+}
+.logo-block .logo {
+    height: 24px;
+}
+.logo-block .title {
+    margin-left: 15px;
+}
