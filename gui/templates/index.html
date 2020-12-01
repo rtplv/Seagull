@@ -1,15 +1,100 @@
-{% extends 'base_layout.html' %}
+{% extends '_base_layout.html' %}
+{% load static %}
+{% load timetags %}
+
 {% block title %}Seagull - Supervisord Monitor{% endblock %}
 
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'styles/index.css' %}">
+{% endblock %}
+
 {% block content %}
-    <div class="groups-list">
-        Groups:
-        <ul>
-            {% for group in groups %}
-                <li>
-                    <a href="{% url 'gui:group_detail' group.id %}">{{ group.name }}</a>
-                </li>
-            {% endfor %}
-        </ul>
+    <div class="groups-list" id="app">
+        <input type="text" class="form-control" v-model="search">
+
+        <div class="group" v-for="(group, name) in filteredProcessGroups">
+            <table class="table">
+                <caption style="caption-side: top">[[ name ]]</caption>
+                <thead>
+                    <tr>
+                        <th>State</th>
+                        <th>Name</th>
+                        <th>Started</th>
+                        <th>Stopped</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="process in group">
+                        <td>
+                            <span class="badge badge-pill"
+                                  :class="{
+                                    'badge-success': process.statename === 'RUNNING',
+                                    'badge-danger': process.statename === 'STOPPED' ||
+                                                    process.statename === 'EXITED' ||
+                                                    process.statename === 'FATAL' ||
+                                                    process.statename === 'BACKOFF',
+                                    'badge-info': process.statename === 'STARTING' || process.statename === 'STOPPING',
+                                  }">
+                                [[ process.statename ]]
+                            </span>
+                        </td>
+                        <td>[[ process.name ]]</td>
+                        <td>[[ humanizeDate(process.start) ]]</td>
+                        <td>[[ humanizeDate(process.stop) ]]</td>
+                        <td>
+                            <button type="button"
+                                    v-if="process.statename !== 'RUNNING' && process.statename !== 'STARTING'"
+                                    class="btn btn-outline-success">Run</button>
+                            <button type="button"
+                                    v-if="process.statename !== 'STOPPED'"
+                                    class="btn btn-outline-danger">Stop</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
+{% endblock %}
+
+{% block scripts %}
+{#    TODO: возможно это стоит вынести в base_layout#}
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+    <script>
+        var vm = new Vue({
+            delimiters: ['[[', ']]'],
+            el: '#app',
+            data: {
+                search: '',
+                processGroups: {{ process_groups|safe }}
+            },
+            computed:{
+              filteredProcessGroups() {
+                  var re = new RegExp(this.search)
+
+                  return Object.keys(this.processGroups).reduce((agg, pgKey) => {
+                      if (re.test(pgKey)) {
+                          agg[pgKey] = this.processGroups[pgKey]
+                          return agg
+                      }
+
+                      var hits = this.processGroups[pgKey].filter(p => re.test(p.name))
+
+                      if (hits.length > 0) {
+                          agg[pgKey] = hits
+                      }
+
+                      return agg;
+                  }, {})
+              }
+            },
+            methods: {
+                humanizeDate(ts) {
+                    return moment(ts * 1000).format('DD.MM.YYYY HH:mm:ss')
+                }
+            }
+        })
+    </script>
 {% endblock %}

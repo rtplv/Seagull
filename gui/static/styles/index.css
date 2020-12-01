@@ -1,0 +1,7 @@
+.group {
+    margin-bottom: 100px;
+}
+
+.group .table caption {
+    font-weight: 600;
+}
