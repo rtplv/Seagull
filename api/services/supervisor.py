@@ -1,5 +1,8 @@
 import os
+from datetime import datetime
 from xmlrpc.client import ServerProxy
+
+from django.utils import timezone
 
 
 class SvService:
@@ -35,7 +38,9 @@ class SvService:
         info = self._server.supervisor.getAllProcessInfo()
 
         for proc in info:
-            proc['state'] = SvService.humanize_process_state(proc['statename'])
+            proc['state'] = SvService.humanize_process_state(proc.get('statename'))
+            proc['uptime'] = timezone.now().timestamp() - proc.get('start')
+            proc['full_name'] = proc.get('name') + ':' + proc.get('group')
 
         return info
 

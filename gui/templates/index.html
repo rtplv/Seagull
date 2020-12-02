@@ -68,6 +68,7 @@
                         <th>Название</th>
                         <th>Время запуска</th>
                         <th>Время остановки</th>
+                        <th>Аптайм</th>
                         <th class="actions-head">Действия</th>
                     </tr>
                 </thead>
@@ -92,23 +93,28 @@
                         <td>[[ humanizeDate(process.start) ]]</td>
                         <td>[[ process.state.name !== 'RUNNING' && process.statename !== 'STARTING' ?
                                 humanizeDate(process.stop): '' ]]</td>
+                        <td>[[ process.state.name === 'RUNNING' ?
+                                humanizeUptime(process.uptime) : '' ]]</td>
                         <td class="actions-cell">
                             <button type="button"
                                     v-if="process.state.name !== 'RUNNING' && process.statename !== 'STARTING'"
                                     @click="startProcess(groupName + ':' + process.name)"
                                     class="btn btn-success btn-sm">
+{#                                <span class="spinner-grow spinner-grow-sm" v-show="process.full_name" role="status" aria-hidden="true"></span>#}
                                 <i class="fas fa-play"></i>
                             </button>
                             <button type="button"
                                     v-if="process.state.name !== 'STOPPED'"
                                     @click="restartProcess(groupName + ':' + process.name)"
                                     class="btn btn-primary btn-sm">
+{#                                <span class="spinner-grow spinner-grow-sm" v-show="process.full_name" role="status" aria-hidden="true"></span>#}
                                 <i class="fas fa-redo"></i>
                             </button>
                             <button type="button"
                                     v-if="process.state.name !== 'STOPPED'"
                                     @click="stopProcess(groupName + ':' + process.name)"
                                     class="btn btn-danger btn-sm">
+{#                                <span class="spinner-grow spinner-grow-sm" v-show="process.full_name" role="status" aria-hidden="true"></span>#}
                                 <i class="fas fa-stop"></i>
                             </button>
                         </td>
@@ -133,6 +139,7 @@
             data: {
                 search: '',
                 processGroups: null,
+                processGroupsInterval: null,
                 spinners: {}
             },
             computed:{
@@ -161,6 +168,7 @@
               }
             },
             mounted() {
+                var self = this;
                 {#Req Preset#}
                 axios.interceptors.request.use(function (config) {
                     config.headers['X-CSRFToken'] = Cookies.get('csrftoken');
@@ -168,6 +176,13 @@
                 });
 
                 this.getAllProcesses()
+
+                this.processGroupsInterval = setInterval(function () {
+                    self.getAllProcesses()
+                }, 5000)
+            },
+            destroyed() {
+                clearInterval(this.processGroupsInterval)
             },
             methods: {
                 getAllProcesses() {
@@ -213,6 +228,9 @@
                 },
                 humanizeDate(ts) {
                     return moment(ts * 1000).format('DD.MM.YY HH:mm:ss')
+                },
+                humanizeUptime(ts) {
+                    return moment.utc(ts * 1000).format('HH:mm:ss')
                 },
                 someProcessWorking(group) {
                     return group.some(p => p.state.name === 'RUNNING')
