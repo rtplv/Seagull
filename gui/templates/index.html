@@ -1,54 +1,87 @@
 {% extends '_base_layout.html' %}
 {% load static %}
-{% load timetags %}
 
 {% block title %}Seagull - Supervisord Monitor{% endblock %}
 
 {% block styles %}
     <link rel="stylesheet" href="{% static 'styles/index.css' %}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
     <div class="groups-list" id="app">
-        <input type="text" class="form-control" v-model="search">
+        <input type="text" class="group-filter form-control" placeholder="Поиск" v-model="search">
 
-        <div class="group" v-for="(group, name) in filteredProcessGroups">
+        <div class="card group" v-for="(group, name) in filteredProcessGroups">
             <table class="table">
-                <caption style="caption-side: top">[[ name ]]</caption>
+                <caption style="caption-side: top">
+                    <div class="caption-wrapper">
+                        <i class="fas fa-circle"
+                           :class="[ someProcessWorking(group) ? 'text-success': 'text-danger' ]"
+                        ></i>
+
+                        <span class="group-name">[[ name ]]</span>
+
+                        <div class="group-actions">
+                            <button type="button"
+                                    v-if="!someProcessWorking(group)"
+                                    class="btn btn-outline-success btn-sm">
+                                Запустить
+                            </button>
+                            <template v-else>
+                                <button type="button"
+                                        class="btn btn-outline-primary btn-sm">Перезапустить</button>
+
+                                <button type="button"
+                                        class="btn btn-outline-danger btn-sm">Остановить</button>
+                            </template>
+                        </div>
+                    </div>
+                </caption>
                 <thead>
                     <tr>
-                        <th>State</th>
-                        <th>Name</th>
-                        <th>Started</th>
-                        <th>Stopped</th>
-                        <th>Actions</th>
+                        <th>Состояние</th>
+                        <th>Название</th>
+                        <th>Время запуска</th>
+                        <th>Время остановки</th>
+                        <th class="actions-head">Действия</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="process in group">
-                        <td>
+                        <td class="state-cell">
                             <span class="badge badge-pill"
+                                  :title="process.state.description"
                                   :class="{
-                                    'badge-success': process.statename === 'RUNNING',
-                                    'badge-danger': process.statename === 'STOPPED' ||
-                                                    process.statename === 'EXITED' ||
-                                                    process.statename === 'FATAL' ||
-                                                    process.statename === 'BACKOFF',
-                                    'badge-info': process.statename === 'STARTING' || process.statename === 'STOPPING',
+                                    'badge-success': process.state.color === 'green',
+                                    'badge-warning': process.state.color === 'yellow',
+                                    'badge-danger': process.state.color === 'red',
                                   }">
-                                [[ process.statename ]]
+                                [[ process.state.title ]]
                             </span>
                         </td>
                         <td>[[ process.name ]]</td>
                         <td>[[ humanizeDate(process.start) ]]</td>
                         <td>[[ humanizeDate(process.stop) ]]</td>
-                        <td>
+                        <td class="actions-cell">
                             <button type="button"
-                                    v-if="process.statename !== 'RUNNING' && process.statename !== 'STARTING'"
-                                    class="btn btn-outline-success">Run</button>
+                                    v-if="process.state.name !== 'RUNNING' && process.statename !== 'STARTING'"
+                                    @click="startProcess(process.name)"
+                                    class="btn btn-success btn-sm">
+                                <i class="fas fa-play"></i>
+                            </button>
                             <button type="button"
-                                    v-if="process.statename !== 'STOPPED'"
-                                    class="btn btn-outline-danger">Stop</button>
+                                    v-if="process.state.name !== 'STOPPED'"
+                                    @click="stopProcess(process.name)"
+                                    class="btn btn-primary btn-sm">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                            <button type="button"
+                                    v-if="process.state.name !== 'STOPPED'"
+                                    @click="stopProcess(process.name)"
+                                    class="btn btn-danger btn-sm">
+                                <i class="fas fa-stop"></i>
+                            </button>
                         </td>
                     </tr>
                 </tbody>
@@ -60,6 +93,7 @@
 {% block scripts %}
 {#    TODO: возможно это стоит вынести в base_layout#}
     <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 
     <script>
@@ -73,14 +107,17 @@
             computed:{
               filteredProcessGroups() {
                   var re = new RegExp(this.search)
+                  var self = this
 
-                  return Object.keys(this.processGroups).reduce((agg, pgKey) => {
+                  return Object.keys(this.processGroups).reduce(function (agg, pgKey) {
                       if (re.test(pgKey)) {
-                          agg[pgKey] = this.processGroups[pgKey]
+                          agg[pgKey] = self.processGroups[pgKey]
                           return agg
                       }
 
-                      var hits = this.processGroups[pgKey].filter(p => re.test(p.name))
+                      var hits = self.processGroups[pgKey].filter(function (p) {
+                         return re.test(p.name)
+                      })
 
                       if (hits.length > 0) {
                           agg[pgKey] = hits
@@ -91,8 +128,23 @@
               }
             },
             methods: {
+                startProcess(processName) {
+                    axios.post('/api/start_process', { params: { process_name: processName }})
+                        .then(function (response) {
+                            console.log(response)
+                        })
+                },
+                stopProcess(processName) {
+                    axios.post('/api/stop_process', { params: { process_name: processName }})
+                        .then(function (response) {
+                            console.log(response)
+                        })
+                },
                 humanizeDate(ts) {
-                    return moment(ts * 1000).format('DD.MM.YYYY HH:mm:ss')
+                    return moment(ts * 1000).format('DD.MM.YY HH:mm:ss')
+                },
+                someProcessWorking(group) {
+                    return group.some(p => p.state.name === 'RUNNING')
                 }
             }
         })

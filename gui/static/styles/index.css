@@ -1,7 +1,31 @@
-.group {
-    margin-bottom: 100px;
+.groups-list .group-filter {
+    width: 30%;
+    margin: 30px 0 30px auto;
 }
 
-.group .table caption {
-    font-weight: 600;
+.group {
+    margin-bottom: 75px;
+    padding: 0 15px;
+}
+
+.group .table .state-cell .badge {
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.group .table .actions-head,
+.group .table .actions-cell {
+    text-align: right;
+}
+
+.group .caption-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.group .group-name {
+    margin-left: 5px;
+}
+.group .caption-wrapper .group-actions {
+    margin-left: auto;
 }
