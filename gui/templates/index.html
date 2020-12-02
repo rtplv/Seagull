@@ -46,14 +46,17 @@
                         <div class="group-actions">
                             <button type="button"
                                     v-if="!someProcessWorking(group)"
+                                    @click="startProcess(groupName + ':*')"
                                     class="btn btn-success btn-sm">
                                 Запустить
                             </button>
                             <template v-else>
                                 <button type="button"
+                                        @click="restartProcess(groupName + ':*')"
                                         class="btn btn-primary btn-sm">Перезапустить</button>
 
                                 <button type="button"
+                                        @click="stopProcess(groupName + ':*')"
                                         class="btn btn-danger btn-sm">Остановить</button>
                             </template>
                         </div>
