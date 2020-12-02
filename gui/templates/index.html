@@ -1,39 +1,60 @@
 {% extends '_base_layout.html' %}
 {% load static %}
 
-{% block title %}Seagull - Supervisord Monitor{% endblock %}
+{% block title %}Seagull{% endblock %}
 
 {% block styles %}
     <link rel="stylesheet" href="{% static 'styles/index.css' %}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
 {% endblock %}
 
+{% block header %}
+    <div class="sv-info">
+        <span class="version">
+            Версия:
+            {{ sv.version }}
+        </span>
+        <br/>
+        <span>
+            Состояние:
+            <span class="badge badge-pill
+                        {% if sv.state.color == 'green' %}badge-success{% endif %}
+                        {% if sv.state.color == 'yellow' %}badge-warning{% endif %}
+                        {% if sv.state.color == 'red' %}badge-danger{% endif %}"
+                  title="{{ sv.state.description }}">
+                {{ sv.state.title }}
+            </span>
+        </span>
+    </div>
+{% endblock %}
+
 {% block content %}
     <div class="groups-list" id="app">
         <input type="text" class="group-filter form-control" placeholder="Поиск" v-model="search">
 
-        <div class="card group" v-for="(group, name) in filteredProcessGroups">
+        <div class="card group"
+             v-for="(group, groupName) in filteredProcessGroups">
             <table class="table">
                 <caption style="caption-side: top">
                     <div class="caption-wrapper">
                         <i class="fas fa-circle"
-                           :class="[ someProcessWorking(group) ? 'text-success': 'text-danger' ]"
+                           :class="[ someProcessWorking(group) ? 'text-success': 'text-warning' ]"
                         ></i>
 
-                        <span class="group-name">[[ name ]]</span>
+                        <span class="group-name">[[ groupName ]]</span>
 
                         <div class="group-actions">
                             <button type="button"
                                     v-if="!someProcessWorking(group)"
-                                    class="btn btn-outline-success btn-sm">
+                                    class="btn btn-success btn-sm">
                                 Запустить
                             </button>
                             <template v-else>
                                 <button type="button"
-                                        class="btn btn-outline-primary btn-sm">Перезапустить</button>
+                                        class="btn btn-primary btn-sm">Перезапустить</button>
 
                                 <button type="button"
-                                        class="btn btn-outline-danger btn-sm">Остановить</button>
+                                        class="btn btn-danger btn-sm">Остановить</button>
                             </template>
                         </div>
                     </div>
@@ -60,25 +81,30 @@
                                 [[ process.state.title ]]
                             </span>
                         </td>
-                        <td>[[ process.name ]]</td>
+                        <td>
+                            <a href="#">
+                                [[ process.name ]]
+                            </a>
+                        </td>
                         <td>[[ humanizeDate(process.start) ]]</td>
-                        <td>[[ humanizeDate(process.stop) ]]</td>
+                        <td>[[ process.state.name !== 'RUNNING' && process.statename !== 'STARTING' ?
+                                humanizeDate(process.stop): '' ]]</td>
                         <td class="actions-cell">
                             <button type="button"
                                     v-if="process.state.name !== 'RUNNING' && process.statename !== 'STARTING'"
-                                    @click="startProcess(process.name)"
+                                    @click="startProcess(groupName + ':' + process.name)"
                                     class="btn btn-success btn-sm">
                                 <i class="fas fa-play"></i>
                             </button>
                             <button type="button"
                                     v-if="process.state.name !== 'STOPPED'"
-                                    @click="stopProcess(process.name)"
+                                    @click="restartProcess(groupName + ':' + process.name)"
                                     class="btn btn-primary btn-sm">
                                 <i class="fas fa-redo"></i>
                             </button>
                             <button type="button"
                                     v-if="process.state.name !== 'STOPPED'"
-                                    @click="stopProcess(process.name)"
+                                    @click="stopProcess(groupName + ':' + process.name)"
                                     class="btn btn-danger btn-sm">
                                 <i class="fas fa-stop"></i>
                             </button>
@@ -94,6 +120,7 @@
 {#    TODO: возможно это стоит вынести в base_layout#}
     <script src="https://cdn.jsdelivr.net/npm/vue"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 
     <script>
@@ -102,10 +129,13 @@
             el: '#app',
             data: {
                 search: '',
-                processGroups: {{ process_groups|safe }}
+                processGroups: null,
+                spinners: {}
             },
             computed:{
               filteredProcessGroups() {
+                  if (!this.processGroups) return []
+
                   var re = new RegExp(this.search)
                   var self = this
 
@@ -127,17 +157,55 @@
                   }, {})
               }
             },
+            mounted() {
+                {#Req Preset#}
+                axios.interceptors.request.use(function (config) {
+                    config.headers['X-CSRFToken'] = Cookies.get('csrftoken');
+                    return config;
+                });
+
+                this.getAllProcesses()
+            },
             methods: {
-                startProcess(processName) {
-                    axios.post('/api/start_process', { params: { process_name: processName }})
+                getAllProcesses() {
+                    var self = this
+
+                    axios.get('/api/process/all')
                         .then(function (response) {
-                            console.log(response)
+                            self.processGroups = response.data.data
+                        })
+                },
+                startProcess(processName) {
+                    var self = this
+
+                    this.spinners[processName] = true
+
+                    axios.post('/api/process/start/', { name: processName })
+                        .then(function (response) {
+                            self.getAllProcesses()
+                            self.spinners[processName] = false
+                        })
+                },
+                restartProcess(processName) {
+                    var self = this
+
+                    this.spinners[processName] = true
+
+                    axios.post('/api/process/restart/', { name: processName })
+                        .then(function (response) {
+                            self.getAllProcesses()
+                            self.spinners[processName] = false
                         })
                 },
                 stopProcess(processName) {
-                    axios.post('/api/stop_process', { params: { process_name: processName }})
+                    var self = this
+
+                    this.spinners[processName] = true
+
+                    axios.post('/api/process/stop/', { name: processName })
                         .then(function (response) {
-                            console.log(response)
+                            self.getAllProcesses()
+                            self.spinners[processName] = false
                         })
                 },
                 humanizeDate(ts) {

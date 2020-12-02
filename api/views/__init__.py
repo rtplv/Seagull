@@ -1,1 +1,1 @@
-from api.views.process import *
+import api.views.process

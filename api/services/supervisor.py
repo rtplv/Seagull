@@ -17,7 +17,7 @@ class SvService:
         Supervisor main process state
         :return: dict
         """
-        return self._server.supervisor.getState()
+        return SvService.humanize_sv_state(self._server.supervisor.getState().get('statename'))
 
     def read_main_log_tail(self):
         return self._server.supervisor.readLog(-16384, 0)
@@ -39,11 +39,46 @@ class SvService:
 
         return info
 
-    def start_process(self, name, wait=False):
+    def start_process(self, name, wait=True):
         return self._server.supervisor.startProcess(name, wait)
 
-    def stop_process(self, name, wait=False):
+    def restart_process(self, name, wait=True):
+        self.stop_process(name, wait)
+        return self.start_process(name, wait)
+
+    def stop_process(self, name, wait=True):
         return self._server.supervisor.stopProcess(name, wait)
+
+    @staticmethod
+    def humanize_sv_state(state):
+        base_state = {
+            'name': state
+        }
+
+        if state == 'FATAL':
+            return {
+                **base_state,
+                'color': 'red',
+                'title': 'Фаталочка'
+            }
+        elif state == 'RUNNING':
+            return {
+                **base_state,
+                'color': 'green',
+                'title': 'Запущен'
+            }
+        elif state == 'RESTARTING':
+            return {
+                **base_state,
+                'color': 'yellow',
+                'title': 'В процессе перезагрузки'
+            }
+        elif state == 'SHUTDOWN':
+            return {
+                **base_state,
+                'color': 'yellow',
+                'title': 'Выключен'
+            }
 
     @staticmethod
     def humanize_process_state(state):

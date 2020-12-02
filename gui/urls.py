@@ -5,6 +5,5 @@ from gui import views
 app_name = 'gui'
 
 urlpatterns = [
-    path('', views.index, name='index'),
-    # path('')
+    path('', views.index, name='index')
 ]

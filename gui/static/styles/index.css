@@ -17,6 +17,9 @@
 .group .table .actions-cell {
     text-align: right;
 }
+.group .table .actions-cell .btn {
+    margin-left: 7px;
+}
 
 .group .caption-wrapper {
     display: flex;
