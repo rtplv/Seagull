@@ -40,7 +40,7 @@ class SvService:
         for proc in info:
             proc['state'] = SvService.humanize_process_state(proc.get('statename'))
             proc['uptime'] = timezone.now().timestamp() - proc.get('start')
-            proc['full_name'] = proc.get('name') + ':' + proc.get('group')
+            proc['full_name'] = proc.get('group') + ':' + proc.get('name')
 
         return info
 

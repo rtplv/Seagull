@@ -1,8 +1,11 @@
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
+from django.views.decorators.csrf import ensure_csrf_cookie
+
 from api.services.supervisor import SvService
 
 
+@ensure_csrf_cookie
 def index(request: HttpRequest) -> HttpResponse:
     sv_service = SvService()
 

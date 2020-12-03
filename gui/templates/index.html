@@ -30,7 +30,17 @@
 
 {% block content %}
     <div class="groups-list" id="app">
-        <input type="text" class="group-filter form-control" placeholder="Поиск" v-model="search">
+        <div class="groups-header">
+            <input type="text" class="groups-filter form-control form-control-sm" placeholder="Поиск" v-model="search">
+
+            <button type="button"
+                    @click="getAllProcesses()"
+                    :disabled="spinners.reloadAll"
+                    class="btn btn-primary btn-sm groups-reload-btn">
+                <span class="spinner-grow spinner-grow-sm" v-if="spinners.reloadAll" role="status" aria-hidden="true"></span>
+                <i class="fas fa-sync" v-else></i>
+            </button>
+        </div>
 
         <div class="card group"
              v-for="(group, groupName) in filteredProcessGroups">
@@ -47,17 +57,27 @@
                             <button type="button"
                                     v-if="!someProcessWorking(group)"
                                     @click="startProcess(groupName + ':*')"
+                                    :disabled="spinners.start[groupName + ':*']"
                                     class="btn btn-success btn-sm">
+                                <span class="spinner-grow spinner-grow-sm" v-if="spinners.start[groupName + ':*']" role="status" aria-hidden="true"></span>
                                 Запустить
                             </button>
                             <template v-else>
                                 <button type="button"
                                         @click="restartProcess(groupName + ':*')"
-                                        class="btn btn-primary btn-sm">Перезапустить</button>
+                                        :disabled="spinners.restart[groupName + ':*']"
+                                        class="btn btn-primary btn-sm">
+                                    <span class="spinner-grow spinner-grow-sm" v-if="spinners.restart[groupName + ':*']" role="status" aria-hidden="true"></span>
+                                    Перезапустить
+                                </button>
 
                                 <button type="button"
                                         @click="stopProcess(groupName + ':*')"
-                                        class="btn btn-danger btn-sm">Остановить</button>
+                                        :disabled="spinners.stop[groupName + ':*']"
+                                        class="btn btn-danger btn-sm">
+                                    <span class="spinner-grow spinner-grow-sm" v-if="spinners.stop[groupName + ':*']" role="status" aria-hidden="true"></span>
+                                    Остановить
+                                </button>
                             </template>
                         </div>
                     </div>
@@ -98,24 +118,27 @@
                         <td class="actions-cell">
                             <button type="button"
                                     v-if="process.state.name !== 'RUNNING' && process.statename !== 'STARTING'"
-                                    @click="startProcess(groupName + ':' + process.name)"
+                                    @click="startProcess(process.full_name)"
+                                    :disabled="spinners.start[process.full_name]"
                                     class="btn btn-success btn-sm">
-{#                                <span class="spinner-grow spinner-grow-sm" v-show="process.full_name" role="status" aria-hidden="true"></span>#}
-                                <i class="fas fa-play"></i>
+                                <span class="spinner-grow spinner-grow-sm" v-if="spinners.start[process.full_name]" role="status" aria-hidden="true"></span>
+                                <i class="fas fa-play" v-else></i>
                             </button>
                             <button type="button"
                                     v-if="process.state.name !== 'STOPPED'"
-                                    @click="restartProcess(groupName + ':' + process.name)"
+                                    @click="restartProcess(process.full_name)"
+                                    :disabled="spinners.restart[process.full_name]"
                                     class="btn btn-primary btn-sm">
-{#                                <span class="spinner-grow spinner-grow-sm" v-show="process.full_name" role="status" aria-hidden="true"></span>#}
-                                <i class="fas fa-redo"></i>
+                                <span class="spinner-grow spinner-grow-sm" v-if="spinners.restart[process.full_name]" role="status" aria-hidden="true"></span>
+                                <i class="fas fa-redo" v-else></i>
                             </button>
                             <button type="button"
                                     v-if="process.state.name !== 'STOPPED'"
-                                    @click="stopProcess(groupName + ':' + process.name)"
+                                    @click="stopProcess(process.full_name)"
+                                    :disabled="spinners.stop[process.full_name]"
                                     class="btn btn-danger btn-sm">
-{#                                <span class="spinner-grow spinner-grow-sm" v-show="process.full_name" role="status" aria-hidden="true"></span>#}
-                                <i class="fas fa-stop"></i>
+                                <span class="spinner-grow spinner-grow-sm" v-if="spinners.stop[process.full_name]" role="status" aria-hidden="true"></span>
+                                <i class="fas fa-stop" v-else></i>
                             </button>
                         </td>
                     </tr>
@@ -139,8 +162,12 @@
             data: {
                 search: '',
                 processGroups: null,
-                processGroupsInterval: null,
-                spinners: {}
+                spinners: {
+                    reloadAll: false,
+                    start: {},
+                    restart: {},
+                    stop: {},
+                }
             },
             computed:{
               filteredProcessGroups() {
@@ -168,7 +195,6 @@
               }
             },
             mounted() {
-                var self = this;
                 {#Req Preset#}
                 axios.interceptors.request.use(function (config) {
                     config.headers['X-CSRFToken'] = Cookies.get('csrftoken');
@@ -176,54 +202,50 @@
                 });
 
                 this.getAllProcesses()
-
-                this.processGroupsInterval = setInterval(function () {
-                    self.getAllProcesses()
-                }, 5000)
-            },
-            destroyed() {
-                clearInterval(this.processGroupsInterval)
             },
             methods: {
                 getAllProcesses() {
                     var self = this
 
-                    axios.get('/api/process/all')
+                    this.$set(this.spinners, 'reloadAll', true)
+
+                    axios.get('/api/process/all/')
                         .then(function (response) {
                             self.processGroups = response.data.data
+                            self.$set(self.spinners, 'reloadAll', false)
                         })
                 },
                 startProcess(processName) {
                     var self = this
 
-                    this.spinners[processName] = true
+                    this.$set(this.spinners.start, processName, true)
 
                     axios.post('/api/process/start/', { name: processName })
                         .then(function (response) {
                             self.getAllProcesses()
-                            self.spinners[processName] = false
+                            self.$set(self.spinners.start, processName, false)
                         })
                 },
                 restartProcess(processName) {
                     var self = this
 
-                    this.spinners[processName] = true
+                    this.$set(this.spinners.restart, processName, true)
 
                     axios.post('/api/process/restart/', { name: processName })
                         .then(function (response) {
                             self.getAllProcesses()
-                            self.spinners[processName] = false
+                            self.$set(self.spinners.restart, processName, false)
                         })
                 },
                 stopProcess(processName) {
                     var self = this
 
-                    this.spinners[processName] = true
+                    this.$set(this.spinners.stop, processName, true)
 
                     axios.post('/api/process/stop/', { name: processName })
                         .then(function (response) {
                             self.getAllProcesses()
-                            self.spinners[processName] = false
+                            self.$set(self.spinners.stop, processName, false)
                         })
                 },
                 humanizeDate(ts) {
