@@ -15,9 +15,14 @@ git clone https://github.com/rtplv/Seagull.git .seagull
 python manage.py shell -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-3. Run `install.sh` as `sudo`:
-```
-sudo ./install.sh
+3. Run next commands:
+```bash
+python3 -m venv ./venv
+./venv/bin/pip install -r requirements.txt
+
+# Warning. Change user into conf on your's
+cp ./seagull-serv.conf /etc/supervisor/conf.d/seagull-serv.conf 
+supervisorctl update all
 ```
 
 4. It's all! App running on 0.0.0.0:9002
