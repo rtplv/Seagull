@@ -114,7 +114,7 @@
                         <td>[[ process.state.name !== 'RUNNING' && process.statename !== 'STARTING' ?
                                 humanizeDate(process.stop): '' ]]</td>
                         <td>[[ process.state.name === 'RUNNING' ?
-                                humanizeUptime(process.uptime) : '' ]]</td>
+                                getUptime(process) : '' ]]</td>
                         <td class="actions-cell">
                             <button type="button"
                                     v-if="process.state.name !== 'RUNNING' && process.statename !== 'STARTING'"
@@ -251,8 +251,13 @@
                 humanizeDate(ts) {
                     return moment(ts * 1000).format('DD.MM.YY HH:mm:ss')
                 },
-                humanizeUptime(ts) {
-                    return moment.utc(ts * 1000).format('HH:mm:ss')
+                getUptime(process) {
+                    var ms = moment(Date.now()).diff(process.start * 1000);
+                    var d = moment.duration(ms)
+                    var hours = Math.floor(d.asHours())
+                    var days = hours > 24 ? Math.floor(d.asDays()) + 'д.' : ''
+
+                    return days + ' ' + hours + moment.utc(ms).format(":mm:ss")
                 },
                 someProcessWorking(group) {
                     return group.some(p => p.state.name === 'RUNNING')
