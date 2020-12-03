@@ -22,6 +22,8 @@ python3 -m venv ./venv
 
 # Warning. Change user into conf on your's
 cp ./seagull-serv.conf /etc/supervisor/conf.d/seagull-serv.conf 
+cp ./nginx.conf /etc/nginx/sites-available/seagull-serv.conf 
+ln -s /etc/nginx/sites-available/seagull-serv.conf /etc/nginx/sites-enabled/seagull-serv.conf 
 supervisorctl update all
 ```
 
