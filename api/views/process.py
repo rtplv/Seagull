@@ -42,3 +42,19 @@ def stop(request: HttpRequest) -> HttpResponse:
     return JsonResponse({
         'success': SvService().stop_process(params.get('name'))
     })
+
+
+def tail_process_stdout(request: HttpRequest) -> HttpResponse:
+    params = json.loads(request.body)
+
+    return JsonResponse({
+        'data': SvService().tail_process_stdout_log(params.get('name'))
+    })
+
+
+def tail_process_stderr(request: HttpRequest) -> HttpResponse:
+    params = json.loads(request.body)
+
+    return JsonResponse({
+        'data': SvService().tail_process_stderr_log(params.get('name'))
+    })

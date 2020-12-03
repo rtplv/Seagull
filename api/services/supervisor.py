@@ -1,6 +1,5 @@
 import os
-from datetime import datetime
-from xmlrpc.client import ServerProxy
+from xmlrpc.client import ServerProxy, Fault
 
 from django.utils import timezone
 
@@ -137,3 +136,14 @@ class SvService:
                 'title': 'Неизвестно',
                 'description': 'Неизвестный статус (ошибка supervisord)'
             }
+
+    def tail_process_stdout_log(self, name, length=0, offset=8192):
+        return self._server.supervisor.tailProcessStdoutLog(name, length, offset)
+
+    def tail_process_stderr_log(self, name, length=0, offset=8192):
+        try:
+            return self._server.supervisor.tailProcessStderrLog(name, length, offset)
+        except Fault as fault:
+            if fault.faultString == 'NO_FILE':
+                return None
+            raise
