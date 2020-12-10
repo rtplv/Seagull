@@ -16,7 +16,7 @@
 }
 
 .group {
-    margin-bottom: 75px;
+    margin-bottom: 15px;
     padding: 0 15px;
 }
 
@@ -33,14 +33,20 @@
     margin-left: 7px;
 }
 
-.group .caption-wrapper {
+.group .group-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 15px 0;
 }
 .group .group-name {
     margin-left: 5px;
 }
-.group .caption-wrapper .group-actions {
+
+.group .group-name .toggle-icon {
+    margin-left: 5px;
+}
+
+.group .group-header .group-actions {
     margin-left: auto;
 }

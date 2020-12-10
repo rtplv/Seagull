@@ -44,44 +44,52 @@
 
         <div class="card group"
              v-for="(group, groupName) in filteredProcessGroups">
-            <table class="table">
-                <caption style="caption-side: top">
-                    <div class="caption-wrapper">
-                        <i class="fas fa-circle"
-                           :class="[ someProcessWorking(group) ? 'text-success': 'text-warning' ]"
-                        ></i>
+            <div class="group-header">
+                <i class="fas fa-circle"
+                   :class="[ someProcessWorking(group) ? 'text-success': 'text-warning' ]"
+                ></i>
 
-                        <span class="group-name">[[ groupName ]]</span>
+                <a class="group-name text-secondary"
+                   title="Развернуть"
+                   href="#"
+                   @click.prevent="$set(showedGroups, groupName, !showedGroups[groupName])"
+                >
+                    [[ groupName ]]
+                    <i class="toggle-icon fas"
+                       :class="[showedGroups[groupName] ? 'fa-chevron-up' : 'fa-chevron-down']"
+                    ></i>
+                </a>
 
-                        <div class="group-actions">
-                            <button type="button"
-                                    v-if="!someProcessWorking(group)"
-                                    @click="startProcess(groupName + ':*')"
-                                    :disabled="spinners.start[groupName + ':*']"
-                                    class="btn btn-success btn-sm">
-                                <span class="spinner-grow spinner-grow-sm" v-if="spinners.start[groupName + ':*']" role="status" aria-hidden="true"></span>
-                                Запустить
-                            </button>
-                            <template v-else>
-                                <button type="button"
-                                        @click="restartProcess(groupName + ':*')"
-                                        :disabled="spinners.restart[groupName + ':*']"
-                                        class="btn btn-primary btn-sm">
-                                    <span class="spinner-grow spinner-grow-sm" v-if="spinners.restart[groupName + ':*']" role="status" aria-hidden="true"></span>
-                                    Перезапустить
-                                </button>
+                <div class="group-actions">
+                    <button type="button"
+                            v-if="!someProcessWorking(group)"
+                            @click="startProcess(groupName + ':*')"
+                            :disabled="spinners.start[groupName + ':*']"
+                            class="btn btn-success btn-sm">
+                        <span class="spinner-grow spinner-grow-sm" v-if="spinners.start[groupName + ':*']" role="status" aria-hidden="true"></span>
+                        Запустить
+                    </button>
+                    <template v-else>
+                        <button type="button"
+                                @click="restartProcess(groupName + ':*')"
+                                :disabled="spinners.restart[groupName + ':*']"
+                                class="btn btn-primary btn-sm">
+                            <span class="spinner-grow spinner-grow-sm" v-if="spinners.restart[groupName + ':*']" role="status" aria-hidden="true"></span>
+                            Перезапустить
+                        </button>
 
-                                <button type="button"
-                                        @click="stopProcess(groupName + ':*')"
-                                        :disabled="spinners.stop[groupName + ':*']"
-                                        class="btn btn-danger btn-sm">
-                                    <span class="spinner-grow spinner-grow-sm" v-if="spinners.stop[groupName + ':*']" role="status" aria-hidden="true"></span>
-                                    Остановить
-                                </button>
-                            </template>
-                        </div>
-                    </div>
-                </caption>
+                        <button type="button"
+                                @click="stopProcess(groupName + ':*')"
+                                :disabled="spinners.stop[groupName + ':*']"
+                                class="btn btn-danger btn-sm">
+                            <span class="spinner-grow spinner-grow-sm" v-if="spinners.stop[groupName + ':*']" role="status" aria-hidden="true"></span>
+                            Остановить
+                        </button>
+                    </template>
+                </div>
+            </div>
+            <div v-show="showedGroups[groupName]">
+                <table class="table">
                 <thead>
                     <tr>
                         <th>Состояние</th>
@@ -153,6 +161,7 @@
                     </tr>
                 </tbody>
             </table>
+            </div>
         </div>
 
         {#Modal#}
@@ -217,6 +226,7 @@
                 currentModalGroup: '',
                 procStdOut: null,
                 procStdErr: null,
+                showedGroups: {}
             },
             computed:{
               filteredProcessGroups() {
