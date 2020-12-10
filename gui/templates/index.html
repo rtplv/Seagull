@@ -232,17 +232,17 @@
               filteredProcessGroups() {
                   if (!this.processGroups) return []
 
-                  var re = new RegExp(this.search)
+                  var re = new RegExp(this.search.toLowerCase())
                   var self = this
 
                   return Object.keys(this.processGroups).reduce(function (agg, pgKey) {
-                      if (re.test(pgKey)) {
+                      if (re.test(pgKey.toLowerCase())) {
                           agg[pgKey] = self.processGroups[pgKey]
                           return agg
                       }
 
                       var hits = self.processGroups[pgKey].filter(function (p) {
-                         return re.test(p.name)
+                         return re.test(p.name.toLowerCase())
                       })
 
                       if (hits.length > 0) {
